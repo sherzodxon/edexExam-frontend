@@ -34,7 +34,15 @@ export default function TestExamPage() {
   const violationsRef = useRef(0); // closure uchun ref
 
   useEffect(() => { questionsRef.current = questions; }, [questions]);
-
+// Savollarni random chalkashtirish uchun funksiya
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
   // ── Submit ────────────────────────────────────────────────
   const handleSubmit = useCallback(async (auto = false) => {
     if (submittedRef.current) return;
@@ -155,20 +163,29 @@ export default function TestExamPage() {
     timeLimitSec?: number;
     remainingSec?: number;
   }) => {
-    const rawQuestions  = sessionData.questions ?? [];
+    const rawQuestions = sessionData.questions ?? [];
     const existingAnswers = sessionData.existingAnswers ?? [];
-    const answerMap     = new Map(existingAnswers.map(a => [a.questionId, a.selectedOption]));
+    const answerMap = new Map(existingAnswers.map(a => [a.questionId, a.selectedOption]));
 
-    const qs: QuestionWithAnswer[] = rawQuestions.map((q: TestQuestion) => ({
+    // 1. Dastlab savollarga tanlangan javoblarni biriktiramiz
+    let qs: QuestionWithAnswer[] = rawQuestions.map((q: TestQuestion) => ({
       ...q,
       selected: answerMap.get(q.id) ?? null,
     }));
+
+    // 2. AGAR oldin javob berilmagan bo'lsa (yangi test bo'lsa), savollarni chalkashtiramiz
+    // Agar foydalanuvchi sahifani refresh qilsa, tartib buzilmasligi uchun 
+    // existingAnswers bo'sh bo'lgandagina shuffle qilish tavsiya etiladi.
+    // Agar har doim random bo'lishini xohlasangiz, shunchaki: qs = shuffleArray(qs);
+    if (existingAnswers.length === 0) {
+      qs = shuffleArray(qs);
+    }
 
     setQuestions(qs);
     questionsRef.current = qs;
 
     const remaining = sessionData.remainingSec ?? sessionData.timeLimitSec ?? 1200;
-    const total     = sessionData.timeLimitSec ?? 1200;
+    const total = sessionData.timeLimitSec ?? 1200;
 
     setTotalTime(total);
     setTimeLeft(remaining);
@@ -333,6 +350,18 @@ export default function TestExamPage() {
               </span>
               <p className="text-text text-base leading-relaxed">{q?.questionText}</p>
             </div>
+
+            {/* Savol rasmi — faqat imageUrl mavjud bo'lsa ko'rsatiladi */}
+            {q?.imageUrl && (
+              <div className="flex justify-center">
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}${q.imageUrl}`}
+                  alt={`${currentIdx + 1}-savol rasmi`}
+                  className="max-h-64 max-w-full rounded-xl border border-border object-contain bg-bg"
+                  loading="lazy"
+                />
+              </div>
+            )}
 
             <div className="space-y-2.5">
               {['A', 'B', 'C', 'D'].map(opt => {

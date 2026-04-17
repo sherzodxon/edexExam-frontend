@@ -74,6 +74,7 @@ export interface TestQuestion {
   id: number;
   grade: number;
   questionText: string;
+  imageUrl?: string | null;   // ixtiyoriy rasm
   optionA: string;
   optionB: string;
   optionC: string;

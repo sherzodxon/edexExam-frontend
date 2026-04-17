@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { AdminStudent, TestQuestion, ExamConfig } from '@/types';
 import {
   Users, FileQuestion, Settings, Download, Trash2, Plus,
-  LogOut, RefreshCw, Check, X, AlertTriangle,
+  LogOut, RefreshCw, Check, X, AlertTriangle, ImagePlus, ImageOff,
 } from 'lucide-react';
 import EdexLogo from '@/ui/logo';
 
@@ -87,9 +87,9 @@ export default function AdminPage() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-6 animate-fade-in">
           <div className="text-center">
-            <h1 className="font-mono text-3xl text-accent font-semibold tracking-tight flex items-center text-center justify-center">
-           <EdexLogo className="w-12 h-12" />EdEx<span className="text-white">-exam</span>
-          </h1>
+             <h1 className="font-mono text-3xl text-accent font-semibold tracking-tight flex items-center text-center justify-center">
+                       <EdexLogo className="w-12 h-12" />EdEx<span className="text-white">-exam</span>
+                      </h1>
             <p className="text-muted text-sm mt-2">Admin paneliga kirish</p>
           </div>
           <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">
@@ -121,7 +121,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-        <h1 className="font-mono text-3xl text-accent font-semibold tracking-tight flex items-center text-center justify-center">
+         <h1 className="font-mono text-3xl text-accent font-semibold tracking-tight flex items-center text-center justify-center">
            <EdexLogo className="w-12 h-12" />EdEx<span className="text-white">-exam</span>
           </h1>
         <button
@@ -166,10 +166,7 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
   const [search,      setSearch]      = useState('');
   const [gradeFilter, setGradeFilter] = useState('');
 
-  // selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
-
-  // modal state
   const [modal, setModal] = useState<{ ids: number[]; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -186,7 +183,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // ── selection helpers ──
   const toggle = (id: number) =>
     setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
@@ -197,7 +193,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(allIds));
 
-  // ── delete helpers ──
   const askDelete = (ids: number[], label: string) => setModal({ ids, label });
 
   const confirmDelete = async () => {
@@ -212,7 +207,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
     setModal(null);
   };
 
-  // ── download ──
   const handleDownload = (studentId: number) => {
     const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
     fetch(`${base}/api/admin/docs/${studentId}/download`, { headers: { 'x-admin-key': adminKey } })
@@ -246,8 +240,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
 
   return (
     <div className="space-y-4">
-
-      {/* ── confirm modal ── */}
       {modal && (
         <ConfirmModal
           message={modal.ids.length === 1 ? "Talabani o'chirish" : `${modal.ids.length} ta talabani o'chirish`}
@@ -258,7 +250,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
         />
       )}
 
-      {/* ── toolbar ── */}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex gap-2 flex-wrap items-center">
           <input
@@ -279,8 +270,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
           <button onClick={load} className="p-2.5 bg-surface border border-border rounded-xl hover:border-muted transition-all">
             <RefreshCw size={14} className="text-muted" />
           </button>
-
-          {/* bulk delete button */}
           {someSelected && (
             <button
               onClick={() => askDelete(
@@ -294,7 +283,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
             </button>
           )}
         </div>
-
         <button
           onClick={() => {
             fetch(exportUrl, { headers: { 'x-admin-key': adminKey } })
@@ -310,7 +298,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
         </button>
       </div>
 
-      {/* ── stats ── */}
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Jami',         value: students.length },
@@ -325,7 +312,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
         ))}
       </div>
 
-      {/* ── table ── */}
       {loading ? (
         <div className="text-center py-12">
           <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto" />
@@ -336,7 +322,6 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted text-xs font-mono uppercase tracking-widest">
-                  {/* Select all */}
                   <th className="px-4 py-3 w-10">
                     <button
                       onClick={toggleAll}
@@ -425,13 +410,17 @@ function ResultsTab({ adminKey }: { adminKey: string }) {
 interface QuestionDraft {
   id: string;
   questionText: string;
+  imageUrl: string | null;
+  imageFile: File | null;
+  imagePreview: string | null;
   optionA: string; optionB: string; optionC: string; optionD: string;
   correctOption: 'A' | 'B' | 'C' | 'D';
   saving: boolean; saved: boolean; error: string;
 }
 const emptyDraft = (): QuestionDraft => ({
   id: Math.random().toString(36).slice(2),
-  questionText: '', optionA: '', optionB: '', optionC: '', optionD: '',
+  questionText: '', imageUrl: null, imageFile: null, imagePreview: null,
+  optionA: '', optionB: '', optionC: '', optionD: '',
   correctOption: 'A', saving: false, saved: false, error: '',
 });
 
@@ -467,10 +456,23 @@ function QuestionsTab({ adminKey }: { adminKey: string }) {
     const res = await api.adminCreateQuestion(adminKey, {
       grade: sessionGrade,
       questionText: draft.questionText,
+      imageUrl: draft.imageUrl || undefined,
       optionA: draft.optionA, optionB: draft.optionB,
       optionC: draft.optionC, optionD: draft.optionD,
       correctOption: draft.correctOption,
     });
+
+    // Rasm faylni alohida yuklash (savol yaratilgandan keyin)
+    if (draft.imageFile && res.success && res.data?.id) {
+      const formData = new FormData();
+      formData.append('image', draft.imageFile);
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      await fetch(`${base}/api/admin/questions/${res.data.id}/image`, {
+        method: 'POST',
+        headers: { 'x-admin-key': adminKey },
+        body: formData,
+      });
+    }
     if (res.success) {
       setQuestions(q => [res.data, ...q]);
       updateDraft(draft.id, { saving: false, saved: true });
@@ -496,7 +498,6 @@ function QuestionsTab({ adminKey }: { adminKey: string }) {
 
   return (
     <div className="space-y-4">
-
       {modal && (
         <ConfirmModal
           message="Savolni o'chirish"
@@ -587,7 +588,16 @@ function QuestionsTab({ adminKey }: { adminKey: string }) {
               <span className="text-muted font-mono text-xs mt-0.5 shrink-0 w-6">{i + 1}.</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2 justify-between">
-                  <p className="text-text text-sm leading-relaxed">{q.questionText}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text text-lg leading-relaxed">{q.questionText}</p>
+                    {q.imageUrl && (
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}${q.imageUrl}`}
+                        alt="savol rasmi"
+                        className="mt-2 max-h-24 max-w-xs rounded-lg border border-border object-contain bg-bg"
+                      />
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
                     <span className="text-xs font-mono text-muted bg-bg px-2 py-0.5 rounded border border-border">
                       {q.grade === 0 ? 'Hammasi' : `${q.grade}-sinf`}
@@ -600,7 +610,7 @@ function QuestionsTab({ adminKey }: { adminKey: string }) {
                 </div>
                 <div className="grid grid-cols-2 gap-1 mt-2.5">
                   {['A','B','C','D'].map(opt => (
-                    <div key={opt} className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg
+                    <div key={opt} className={`flex items-center gap-1.5 text-base px-2.5 py-1.5 rounded-lg
                       ${q.correctOption === opt ? 'bg-accent/10 text-accent font-medium' : 'text-muted'}`}>
                       <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0
                         ${q.correctOption === opt ? 'border-accent bg-accent' : 'border-border'}`}>
@@ -623,6 +633,9 @@ function QuestionsTab({ adminKey }: { adminKey: string }) {
   );
 }
 
+// ─────────────────────────────────────────────
+// QUESTION DRAFT ROW — with image upload
+// ─────────────────────────────────────────────
 function QuestionDraftRow({ draft, index, onChange, onSave, onRemove }: {
   draft: QuestionDraft; index: number;
   onChange: (patch: Partial<QuestionDraft>) => void;
@@ -630,47 +643,204 @@ function QuestionDraftRow({ draft, index, onChange, onSave, onRemove }: {
 }) {
   const opts: ('A'|'B'|'C'|'D')[] = ['A','B','C','D'];
   const optKey = (o: string) => `option${o}` as 'optionA'|'optionB'|'optionC'|'optionD';
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Rasm tanlash — faylni preview sifatida ko'rsatish
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Faqat rasm fayllarini qabul qilish
+    if (!file.type.startsWith('image/')) {
+      onChange({ error: 'Faqat rasm fayllari qabul qilinadi (jpg, png, gif, webp)' });
+      return;
+    }
+    // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
+      onChange({ error: "Rasm hajmi 5MB dan oshmasligi kerak" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      onChange({
+        imageFile: file,
+        imagePreview: ev.target?.result as string,
+        error: '',
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // input ni reset qilish (xuddi bir xil fayl qayta tanlanishi uchun)
+    e.target.value = '';
+  };
+
+  const removeImage = () => {
+    onChange({ imageFile: null, imagePreview: null, imageUrl: null });
+  };
+
   return (
     <div className={`px-6 py-5 space-y-4 ${draft.saved ? 'opacity-60' : ''}`}>
+      {/* Savol sarlavhasi */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-mono text-muted">{index + 1}-savol</span>
-        {draft.saved && <span className="flex items-center gap-1 text-xs text-accent font-mono"><Check size={11} /> Saqlandi</span>}
+        {draft.saved && (
+          <span className="flex items-center gap-1 text-xs text-accent font-mono">
+            <Check size={11} /> Saqlandi
+          </span>
+        )}
         {onRemove && !draft.saved && (
-          <button onClick={onRemove} className="ml-auto p-1 text-muted hover:text-error rounded transition-colors"><Trash2 size={12} /></button>
+          <button
+            onClick={onRemove}
+            className="ml-auto p-1 text-muted hover:text-error rounded transition-colors"
+          >
+            <Trash2 size={12} />
+          </button>
         )}
       </div>
-      <textarea value={draft.questionText} onChange={e => onChange({ questionText: e.target.value })}
-        disabled={draft.saved} placeholder={`${index + 1}-savol matnini kiriting...`} rows={2}
+
+      {/* Savol matni */}
+      <textarea
+        value={draft.questionText}
+        onChange={e => onChange({ questionText: e.target.value })}
+        disabled={draft.saved}
+        placeholder={`${index + 1}-savol matnini kiriting...`}
+        rows={2}
         className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm text-text
-          placeholder:text-muted outline-none focus:border-accent transition-all resize-none disabled:opacity-50" />
+          placeholder:text-muted outline-none focus:border-accent transition-all resize-none disabled:opacity-50"
+      />
+
+      {/* ── RASM YUKLASH BLOKI ── */}
+      {!draft.saved && (
+        <div className="space-y-2">
+          {/* Rasm preview yoki yuklash tugmasi */}
+          {draft.imagePreview ? (
+            <div className="relative inline-flex group">
+              {/* Preview */}
+              <div className="relative rounded-xl overflow-hidden border border-border bg-bg">
+                <img
+                  src={draft.imagePreview}
+                  alt="preview"
+                  className="max-h-40 max-w-xs object-contain"
+                />
+                {/* Overlay: hover da o'chirish tugmasi */}
+                <div className="absolute inset-0 bg-bg/70 opacity-0 group-hover:opacity-100
+                  transition-opacity flex items-center justify-center gap-2">
+                  {/* Rasmni almashtirish */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 bg-surface border border-border
+                      text-sub text-xs font-mono px-3 py-1.5 rounded-lg hover:border-accent
+                      hover:text-accent transition-all"
+                  >
+                    <ImagePlus size={12} /> Almashtirish
+                  </button>
+                  {/* Rasmni o'chirish */}
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="flex items-center gap-1.5 bg-error/10 border border-error/30
+                      text-error text-xs font-mono px-3 py-1.5 rounded-lg hover:bg-error/20
+                      transition-all"
+                  >
+                    <ImageOff size={12} /> O'chirish
+                  </button>
+                </div>
+              </div>
+
+              {/* Fayl nomi */}
+              <div className="absolute -bottom-5 left-0 right-0">
+                <p className="text-muted text-xs font-mono truncate">
+                  {draft.imageFile?.name}
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Rasm yuklash tugmasi — dotted border */
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed
+                border-border text-muted text-xs font-mono hover:border-accent hover:text-accent
+                transition-all group"
+            >
+              <ImagePlus size={14} className="group-hover:scale-110 transition-transform" />
+              Rasm qo'shish
+              <span className="text-muted/50 ml-1">(ixtiyoriy)</span>
+            </button>
+          )}
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageChange}
+          />
+        </div>
+      )}
+
+      {/* Saqlangan savolda rasm preview (read-only) */}
+      {draft.saved && draft.imagePreview && (
+        <div className="rounded-xl overflow-hidden border border-border bg-bg inline-flex">
+          <img
+            src={draft.imagePreview}
+            alt="savol rasmi"
+            className="max-h-24 max-w-xs object-contain"
+          />
+        </div>
+      )}
+
+      {/* Javob variantlari */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {opts.map(opt => {
           const isCorrect = draft.correctOption === opt;
           return (
-            <div key={opt} onClick={() => !draft.saved && onChange({ correctOption: opt })}
+            <div
+              key={opt}
+              onClick={() => !draft.saved && onChange({ correctOption: opt })}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all group
-                ${isCorrect ? 'border-accent bg-accent/5' : 'border-border hover:border-sub/50'}`}>
+                ${isCorrect ? 'border-accent bg-accent/5' : 'border-border hover:border-sub/50'}`}
+            >
               <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all
                 ${isCorrect ? 'border-accent' : 'border-border group-hover:border-sub'}`}>
                 {isCorrect && <div className="w-2 h-2 rounded-full bg-accent" />}
               </div>
-              <span className={`font-mono text-xs font-bold shrink-0 w-4 ${isCorrect ? 'text-accent' : 'text-muted'}`}>{opt}</span>
-              <input value={draft[optKey(opt)]} onChange={e => { e.stopPropagation(); onChange({ [optKey(opt)]: e.target.value }); }}
-                onClick={e => e.stopPropagation()} disabled={draft.saved} placeholder={`${opt} varianti`}
-                className="flex-1 bg-transparent text-sm text-text placeholder:text-muted outline-none disabled:opacity-50" />
+              <span className={`font-mono text-xs font-bold shrink-0 w-4 ${isCorrect ? 'text-accent' : 'text-muted'}`}>
+                {opt}
+              </span>
+              <input
+                value={draft[optKey(opt)]}
+                onChange={e => { e.stopPropagation(); onChange({ [optKey(opt)]: e.target.value }); }}
+                onClick={e => e.stopPropagation()}
+                disabled={draft.saved}
+                placeholder={`${opt} varianti`}
+                className="flex-1 bg-transparent text-sm text-text placeholder:text-muted outline-none disabled:opacity-50"
+              />
             </div>
           );
         })}
       </div>
+
+      {/* Xato xabari + saqlash tugmasi */}
       <div className="flex items-center justify-between gap-3">
-        {draft.error ? <p className="text-error text-xs">{draft.error}</p> : <div />}
+        {draft.error
+          ? <p className="text-error text-xs">{draft.error}</p>
+          : <div />
+        }
         {!draft.saved && (
-          <button onClick={onSave} disabled={draft.saving}
+          <button
+            onClick={onSave}
+            disabled={draft.saving}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-accent text-bg rounded-lg
-              text-xs font-mono font-semibold hover:bg-accent-dim transition-all disabled:opacity-50 ml-auto">
+              text-xs font-mono font-semibold hover:bg-accent-dim transition-all disabled:opacity-50 ml-auto"
+          >
             {draft.saving
               ? <><span className="w-3 h-3 border border-bg border-t-transparent rounded-full animate-spin" /> Saqlanmoqda</>
-              : <><Check size={11} /> Saqlash</>}
+              : <><Check size={11} /> Saqlash</>
+            }
           </button>
         )}
       </div>
@@ -679,20 +849,57 @@ function QuestionDraftRow({ draft, index, onChange, onSave, onRemove }: {
 }
 
 // ─────────────────────────────────────────────
-// CONFIG TAB
+// CONFIG TAB — 3 sinf guruhi uchun alohida mezonlar
 // ─────────────────────────────────────────────
+type GradeGroup = 'group_5_6' | 'group_7_8' | 'group_9_11';
+
+const GROUP_LABELS: { key: GradeGroup; label: string }[] = [
+  { key: 'group_5_6',  label: '5–6 sinf'  },
+  { key: 'group_7_8',  label: '7–8 sinf'  },
+  { key: 'group_9_11', label: '9–11 sinf' },
+];
+
+const DEFAULT_CRITERIA = JSON.stringify({
+  baholash_mezonlari: [
+    { id: 1, nomi: "Imlo xatolari",            maksimal_ball: 10 },
+    { id: 2, nomi: "Grammatik to'g'rilik",   maksimal_ball: 10 },
+    { id: 3, nomi: "Punktuatsiya",             maksimal_ball: 5  },
+    { id: 4, nomi: "Abzats va matn tuzilishi", maksimal_ball: 5  },
+    { id: 5, nomi: "Jadvalni rasmiylashtirish",maksimal_ball: 5  },
+    { id: 6, nomi: "Umumiy format va ko'rinish", maksimal_ball: 5 },
+  ],
+}, null, 2);
+
 function ConfigTab({ adminKey }: { adminKey: string }) {
-  const [config,       setConfig]       = useState<Partial<ExamConfig>>({});
-  const [loading,      setLoading]      = useState(true);
-  const [saving,       setSaving]       = useState(false);
-  const [saved,        setSaved]        = useState(false);
-  const [criteriaText, setCriteriaText] = useState('');
+  const [config,    setConfig]    = useState<Partial<ExamConfig>>({});
+  const [loading,   setLoading]   = useState(true);
+  const [saving,    setSaving]    = useState(false);
+  const [saved,     setSaved]     = useState(false);
+  const [activeGroup, setActiveGroup] = useState<GradeGroup>('group_5_6');
+
+  const [criteriaTexts, setCriteriaTexts] = useState<Record<GradeGroup, string>>({
+    group_5_6:  DEFAULT_CRITERIA,
+    group_7_8:  DEFAULT_CRITERIA,
+    group_9_11: DEFAULT_CRITERIA,
+  });
 
   useEffect(() => {
     api.adminGetConfig(adminKey).then((res: { data: ExamConfig }) => {
-      setConfig(res.data ?? {});
-      try { setCriteriaText(JSON.stringify(JSON.parse(res.data?.docsCriteria ?? '{}'), null, 2)); }
-      catch { setCriteriaText(''); }
+      const d = res.data ?? {};
+      setConfig(d);
+      try {
+        const parsed = JSON.parse(d?.docsCriteria ?? '{}');
+        if (parsed.group_5_6 || parsed.group_7_8 || parsed.group_9_11) {
+          setCriteriaTexts({
+            group_5_6:  JSON.stringify(parsed.group_5_6  ?? {}, null, 2),
+            group_7_8:  JSON.stringify(parsed.group_7_8  ?? {}, null, 2),
+            group_9_11: JSON.stringify(parsed.group_9_11 ?? {}, null, 2),
+          });
+        } else if (parsed.baholash_mezonlari) {
+          const txt = JSON.stringify(parsed, null, 2);
+          setCriteriaTexts({ group_5_6: txt, group_7_8: txt, group_9_11: txt });
+        }
+      } catch { /* default qoladi */ }
       setLoading(false);
     });
   }, [adminKey]);
@@ -702,27 +909,39 @@ function ConfigTab({ adminKey }: { adminKey: string }) {
 
   const handleSave = async () => {
     setSaving(true);
-    let parsedCriteria;
-    try { parsedCriteria = criteriaText ? JSON.parse(criteriaText) : null; }
-    catch { alert("Mezon JSON formati noto'g'ri!"); setSaving(false); return; }
+    const groups: Record<string, unknown> = {};
+    for (const { key } of GROUP_LABELS) {
+      try {
+        groups[key] = JSON.parse(criteriaTexts[key]);
+      } catch {
+        alert(`${GROUP_LABELS.find(g => g.key === key)?.label} mezon JSON formati noto'g'ri!`);
+        setSaving(false);
+        return;
+      }
+    }
     await api.adminUpdateConfig(adminKey, {
       testTimeLimitSec: config.testTimeLimitSec,
       docsTimeLimitSec: config.docsTimeLimitSec,
-      docsCriteria: parsedCriteria,
+      docsCriteria: groups,
     });
-    setSaving(false); setSaved(true);
+    setSaving(false);
+    setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  if (loading) return <div className="text-center py-12"><div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto" /></div>;
+  if (loading) return (
+    <div className="text-center py-12">
+      <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto" />
+    </div>
+  );
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
         <h3 className="font-mono text-sm font-semibold text-text">Vaqt limiti</h3>
         <div className="space-y-4">
           {[
-            { label: 'Test vaqti', key: 'testTimeLimitSec' as const, max: 180, def: 1200 },
+            { label: 'Test vaqti',         key: 'testTimeLimitSec' as const, max: 180, def: 1200 },
             { label: 'Word yuklash vaqti', key: 'docsTimeLimitSec' as const, max: 300, def: 1800 },
           ].map(({ label, key, max, def }) => (
             <div key={key} className="space-y-1.5">
@@ -734,7 +953,9 @@ function ConfigTab({ adminKey }: { adminKey: string }) {
                     onChange={e => setConfig(c => ({ ...c, [key]: minToSec(parseInt(e.target.value) || 1) }))}
                     className="w-28 bg-bg border border-border rounded-xl pl-4 pr-16 py-2.5 font-mono text-sm text-text outline-none focus:border-accent transition-all"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xs font-mono pointer-events-none">daqiqa</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xs font-mono pointer-events-none">
+                    daqiqa
+                  </span>
                 </div>
                 <span className="text-muted text-xs font-mono">= {config[key] ?? def} soniya</span>
               </div>
@@ -743,20 +964,53 @@ function ConfigTab({ adminKey }: { adminKey: string }) {
         </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">
-        <div>
-          <h3 className="font-mono text-sm font-semibold text-text">Word fayl mezonlari</h3>
-          <p className="text-muted text-xs mt-1">JSON formatida. Mezonlar asosida 40 ball taqsimlanadi.</p>
+      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+        <div className="border-b border-border px-6 pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-mono text-sm font-semibold text-text">Word fayl mezonlari</h3>
+              <p className="text-muted text-xs mt-0.5">Har sinf guruhi uchun alohida mezon. 40 ball taqsimlanadi.</p>
+            </div>
+          </div>
+          <div className="flex gap-1 -mb-px">
+            {GROUP_LABELS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setActiveGroup(key)}
+                className={`px-4 py-2 text-xs font-mono font-medium border-b-2 transition-all
+                  ${activeGroup === key
+                    ? 'border-accent text-accent'
+                    : 'border-transparent text-muted hover:text-sub'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="bg-bg border border-border rounded-xl p-1">
-          <textarea value={criteriaText} onChange={e => setCriteriaText(e.target.value)} rows={14}
-            className="w-full bg-transparent font-mono text-xs text-text placeholder:text-muted/50 outline-none resize-none px-3 py-2 leading-relaxed" />
+        <div className="p-6 space-y-3">
+          <div className="bg-bg border border-border rounded-xl p-1">
+            <textarea
+              key={activeGroup}
+              value={criteriaTexts[activeGroup]}
+              onChange={e => setCriteriaTexts(prev => ({ ...prev, [activeGroup]: e.target.value }))}
+              rows={16}
+              placeholder={DEFAULT_CRITERIA}
+              className="w-full bg-transparent font-mono text-xs text-text placeholder:text-muted/30
+                outline-none resize-none px-3 py-2 leading-relaxed"
+            />
+          </div>
+          <p className="text-muted text-xs font-mono">
+            nomi — mezon nomi | maksimal_ball — max ball | id — tartib raqami
+          </p>
         </div>
-        <p className="text-muted text-xs font-mono">keyword — so'z qidiradi | minWords — minimal so'z soni | label — ko'rsatiladigan nom</p>
       </div>
 
-      <button onClick={handleSave} disabled={saving}
-        className="flex items-center gap-2 bg-accent text-bg font-mono font-semibold px-6 py-3 rounded-xl hover:bg-accent-dim transition-all disabled:opacity-50">
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="flex items-center gap-2 bg-accent text-bg font-mono font-semibold px-6 py-3 rounded-xl
+          hover:bg-accent-dim transition-all disabled:opacity-50"
+      >
         {saved ? <><Check size={14} /> Saqlandi!</> : saving ? 'Saqlanmoqda...' : 'Saqlash'}
       </button>
     </div>
