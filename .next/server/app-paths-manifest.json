@@ -1,0 +1,8 @@
+{
+  "/admin/page": "app/admin/page.js",
+  "/exam/typing/page": "app/exam/typing/page.js",
+  "/exam/test/page": "app/exam/test/page.js",
+  "/exam/docs/page": "app/exam/docs/page.js",
+  "/results/page": "app/results/page.js",
+  "/page": "app/page.js"
+}
