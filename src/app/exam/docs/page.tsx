@@ -23,7 +23,7 @@ export default function DocsExamPage() {
   const [dragging, setDragging] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
-  const [criteria, setCriteria] = useState<{ label: string }[] | null>(null);
+  const [criteria, setCriteria] = useState<{ nomi?: string; label?: string; maksimal_ball?: number }[] | null>(null);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [error, setError] = useState('');
@@ -92,7 +92,9 @@ export default function DocsExamPage() {
 
       setTotalTime(total);
       setTimeLeft(remaining);
-      setCriteria(data.criteria?.items ?? null);
+      // criteria yangi format: { baholash_mezonlari: [...] } yoki eski { items: [...] }
+      const crit = data.criteria as { baholash_mezonlari?: { nomi: string; maksimal_ball: number }[]; items?: { label: string }[] } | null;
+      setCriteria(crit?.baholash_mezonlari ?? crit?.items ?? null);
 
       const deadline = Date.now() + remaining * 1000;
       deadlineRef.current = deadline;
@@ -127,16 +129,22 @@ export default function DocsExamPage() {
     }
   };
 
+  const validateFile = (f: File): string | null => {
+    if (!f.name.endsWith('.docx')) return 'Faqat .docx formatdagi fayllar qabul qilinadi';
+    if (f.size === 0)              return "Fayl bo'sh (0 KB). To'g'ri fayl yuklang";
+    if (f.size > 10 * 1024 * 1024) return 'Fayl hajmi 10 MB dan oshmasligi kerak';
+    return null;
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const dropped = e.dataTransfer.files[0];
-    if (dropped && (dropped.name.endsWith('.docx') || dropped.name.endsWith('.doc'))) {
-      setFile(dropped);
-      setError('');
-    } else {
-      setError('Faqat .docx yoki .doc formatdagi fayllar qabul qilinadi');
-    }
+    if (!dropped) return;
+    const err = validateFile(dropped);
+    if (err) { setError(err); return; }
+    setFile(dropped);
+    setError('');
   }, []);
 
   const formatTime = (sec: number) => {
@@ -192,7 +200,7 @@ export default function DocsExamPage() {
           <div className="w-full max-w-lg space-y-6 animate-fade-in">
             <div className="text-center">
               <h2 className="text-xl font-semibold text-text mb-1">Word fayl yuklash</h2>
-              <p className="text-sub text-sm">Topshiriqni bajarib, .docx faylini yuboring</p>
+              <p className="text-sub text-sm">Topshiriqni bajarib, <span className="text-accent font-mono">.docx</span> faylini yuboring</p>
             </div>
 
             {/* Criteria */}
@@ -202,9 +210,14 @@ export default function DocsExamPage() {
                   Baholash mezonlari
                 </p>
                 {criteria.map((c, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-sub">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                    {c.label}
+                  <div key={i} className="flex items-center justify-between text-sm text-sub">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      {c.nomi ?? c.label}
+                    </div>
+                    {c.maksimal_ball && (
+                      <span className="font-mono text-xs text-muted">{c.maksimal_ball} ball</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -222,11 +235,15 @@ export default function DocsExamPage() {
               <input
                 ref={inputRef}
                 type="file"
-                accept=".doc,.docx"
+                accept=".docx"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) { setFile(f); setError(''); }
+                  if (!f) return;
+                  const err = validateFile(f);
+                  if (err) { setError(err); e.target.value = ''; return; }
+                  setFile(f);
+                  setError('');
                 }}
               />
               {file ? (
@@ -240,7 +257,7 @@ export default function DocsExamPage() {
                 <div className="space-y-3">
                   <Upload size={36} className="text-muted mx-auto" />
                   <p className="text-sub text-sm">Faylni bu yerga tashlang yoki bosing</p>
-                  <p className="text-muted text-xs">.docx yoki .doc · maks 10MB</p>
+                  <p className="text-muted text-xs">.docx · maks 10MB</p>
                 </div>
               )}
             </div>
