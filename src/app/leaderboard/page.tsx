@@ -208,14 +208,14 @@ export default function LeaderboardPage() {
 
             {/* Top 3 podium */}
             {students.length >= 3 && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 items-end gap-3">
                 {[students[1], students[0], students[2]].map((s, i) => {
                   const colors = [
                     'border-sub/30 bg-sub/5',
                     'border-accent/40 bg-accent/5',
                     'border-orange-500/30 bg-orange-500/5',
                   ];
-                  const heights = ['h-24', 'h-32', 'h-20'];
+                  const heights = ['h-32', 'h-44', 'h-28'];
                   const medals  = ['🥈', '🥇', '🥉'];
                   return (
                     <div key={s.id}
@@ -253,12 +253,12 @@ export default function LeaderboardPage() {
                 <div key={s.id}
                   className={`grid grid-cols-12 gap-2 px-4 py-3.5 items-center text-sm
                     ${i !== students.length - 1 ? 'border-b border-border' : ''}
-                    ${i < 3 ? 'bg-accent/[0.02]' : ''}`}
+                    ${i < 3 ? 'bg-accent/[0.1]' : ''}`}
                 >
                   <div className="col-span-1">
-                    {i === 0 ? <Trophy size={14} className="text-yellow-400" />
-                      : i === 1 ? <Medal size={14} className="text-gray-400" />
-                      : i === 2 ? <Medal size={14} className="text-orange-400" />
+                    {i === 0 ? <Trophy size={18} className="text-yellow-600" />
+                      : i === 1 ? <Medal size={18} className="text-gray-600" />
+                      : i === 2 ? <Medal size={18} className="text-orange-600" />
                       : <span className="text-muted font-mono text-xs">{i + 1}</span>}
                   </div>
                   <div className="col-span-4 min-w-0">
